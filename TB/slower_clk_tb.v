@@ -18,36 +18,36 @@
 
 module slow_clk_tb;
 
-	// Inputs
-	reg [0:0] clk;
-	reg [0:0] rst;
+  // Inputs
+  reg [0:0] clk;
+  reg [0:0] rst;
 
-	// Outputs
-	wire [0:0] clk_slow;
+  // Outputs
+  wire [0:0] clk_slow;
 
-	// Instantiate the Unit Under Test (UUT)
-	slower_clk #(2) uut (
-		.clk_slow(clk_slow)
-	);
+  // Instantiate the Unit Under Test (UUT)
+  slower_clk #(2) uut (
+    .clk_slow(clk_slow)
+  );
 
   //always  #2  clk =  ! clk;
 
   initial begin
- 		// Initialize Inputs
-		clk = 0;
-		rst = 1;
+    // Initialize Inputs
+    clk = 0;
+    rst = 1;
 
-		// Wait 100 ns for global reset to finish
-		//#100;
-		// Add stimulus here
-		#10 rst = 0;
-		#1000 $finish;
+    // Wait 100 ns for global reset to finish
+    //#100;
+    // Add stimulus here
+    #10 rst = 0;
+    #1000 $finish;
 
-	end
+  end
   initial begin
-	//generador del clk
-	forever begin
-		#2 clk = ~clk ;
-	end
+  //generador del clk
+  forever begin
+    #2 clk = ~clk ;
+  end
 endmodule
 
