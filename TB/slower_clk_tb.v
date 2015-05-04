@@ -1,25 +1,19 @@
 `timescale 1ns / 1ps
 
 ////////////////////////////////////////////////////////////////////////////////
-// Company: 
 // Engineer:
 //
 // Create Date:   20:55:33 04/30/2015
 // Design Name:   slower_clk
 // Module Name:   C:/Users/gonzalof/Desktop/FPGA/DASD/T2/Codigo/slow_clk_tb.v
 // Project Name:  Codigo
-// Target Device:  
-// Tool versions:  
-// Description: 
 //
 // Verilog Test Fixture created by ISE for module: slower_clk
 //
 // Dependencies:
-// 
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
 ////////////////////////////////////////////////////////////////////////////////
 
 module slow_clk_tb;
@@ -33,8 +27,6 @@ module slow_clk_tb;
 
 	// Instantiate the Unit Under Test (UUT)
 	slower_clk #(2) uut (
-		.clk(clk), 
-		.rst(rst), 
 		.clk_slow(clk_slow)
 	);
 
@@ -47,10 +39,8 @@ module slow_clk_tb;
 
 		// Wait 100 ns for global reset to finish
 		//#100;
-        
 		// Add stimulus here
 		#10 rst = 0;
-		
 		#1000 $finish;
 
 	end
@@ -59,6 +49,5 @@ module slow_clk_tb;
 	forever begin
 		#2 clk = ~clk ;
 	end
-end	
 endmodule
 
