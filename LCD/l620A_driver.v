@@ -97,6 +97,7 @@ always @(posedge clk) begin
       driver_count  <= 1'b1;
       driver_rdy    <= 1'b1;
       nibble        <= 1'b0;
+      state         <= 4'b0000;
     end
   endcase
 end

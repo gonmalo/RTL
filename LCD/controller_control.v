@@ -25,13 +25,15 @@ module controller_control #(
   output reg  [0:0]           ctrl_rdy,
   output reg  [7:0]           ctrl_cmd
   );
+//
+wire [5:0] command;
 
 /// LCD Commands
 parameter [7:0] SETUP       = 8'b00101000;  //Execution time = 42us, sets to 4-bit interface, 2-line display, 5x8 dots
 parameter [7:0] DISP_ON     = 8'b00001100;  //Execution time = 42us, Turn ON Display
 parameter [7:0] ALL_ON      = 8'b00001111;  //Execution time = 42us, Turn ON All Display
 parameter [7:0] ALL_OFF     = 8'b00001000;  //Execution time = 42us, Turn OFF All Display
-parameter [7:0] CLEAR       = 8'b00000001;  //Execution time = 1.64ms, Clear Display
+parameter [7:0] CLEAR_CMD   = 8'b00000001;  //Execution time = 1.64ms, Clear Display
 parameter [7:0] ENTRY_MODE  = 8'b00000110;  //Execution time = 42us, Normal Entry, Cursor increments, Display is not shifted
 parameter [7:0] HOME        = 8'b00000010;  //Execution time = 1.64ms, Return Home
 parameter [7:0] C_SHIFT_L   = 8'b00010000;  //Execution time = 42us, Cursor Shift
@@ -84,8 +86,8 @@ parameter [2:0] CLEAR_DO      = 3'b001,
                 CLEAR_NOP     = 3'b000;
 
 // SEND DATA STATES
-parameter [2:0] SEND_DO   <= 1'b001,
-                SEND_NOP  <= 1'b000;
+parameter [2:0] SEND_DO   = 1'b001,
+                SEND_NOP  = 1'b000;
 
 // store command on a reg afteer a en posedge
 // or turn on an error flag if op changes while busy
@@ -142,7 +144,7 @@ always @(posedge clk) begin
           ctrl_sel_data       <= INTERNAL_CMD;
           ctrl_enable_driver  <= 1'b1;
           ctrl_rdy            <= 1'b0;
-          ctrl_cmd            <= CLEAR;
+          ctrl_cmd            <= CLEAR_CMD;
           ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_RDY : INIT_CLR;
         end
 
@@ -195,7 +197,7 @@ always @(posedge clk) begin
           ctrl_sel_data       <= INTERNAL_CMD;
           ctrl_enable_driver  <= 1'b1;
           ctrl_rdy            <= 1'b0;
-          ctrl_cmd            <= CLEAR;
+          ctrl_cmd            <= CLEAR_CMD;
           ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? CLEAR_WAIT : CLEAR_DO;
         end
 

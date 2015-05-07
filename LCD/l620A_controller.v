@@ -11,7 +11,8 @@
  */
 
 module L1602A_controller #(
-  parameter [1:0] NCOMMANDS = 3,
+  parameter [2:0] NCOMMANDS = 5,
+  parameter [7:0] COUNT_SIZE= 20,
   parameter [0:0] MODE      = 1,         // 0: 8 bit - 1: 4bit
   parameter [0:0] LINES     = 1          // 0: 1 line - 1: 2 lines
   )(
@@ -20,10 +21,17 @@ module L1602A_controller #(
   input wire  [NCOMMANDS:0]   op_in,
   input wire  [0:0]           enable,
   input wire  [0:0]           rst,
-  output reg  [2:0]           lcd_ctrl,   // RS - RW - E
-  output reg  [7-(MODE*4):0]  lcd_data,
+  output wire [2:0]           lcd_ctrl,   // RS - RW - E
+  output wire [7-(MODE*4):0]  lcd_data,
   output reg  [0:0]           lcd_rdy
   );
+
+// Interconnection wires
+reg  [7:0] driver_data_in;
+
+wire [COUNT_SIZE-1:0] count_cum;
+wire [7:0]            ctrl_cmd;
+wire [1:0]            ctrl_sel_data;
 
 /// Delays requiered by the LCD
 parameter [19:0] t_40ns   = 1;        //40ns    == ~1clk
@@ -44,12 +52,12 @@ reg [0:0] f_40ns    =0,
           f_15000us =0;
 
 // Counter instance
-contador #(.WIDTH(20)) delay_count(
+contador #(.WIDTH(COUNT_SIZE)) delay_count(
   .nxt(clk),
   .dir(1'b1),
   .rst(start_count),
   .empty(),
-  .full(full),
+  .full(),
   .cuenta(count_cum)
   );
 
@@ -74,12 +82,12 @@ assign count_enable = ctrl_sel_count ? nctrl_count : ndriver_count; //and with ~
 // LCD Driver instance
 L1602A_driver #(.NFLAGS(7)) lcd_driver (
   .clk(clk),
-  .data_in(ctrl_sel_data),
+  .data_in(driver_data_in),
   .flags_in({f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us}),
   .enable(ctrl_enable_driver),
   .is_data(ctrl_sel_data[1]),
   .rst(rst),
-  .driver_count(driver_count),
+  .driver_count(ndriver_count),
   .driver_error(),   // Not implemented yet
   .driver_rdy(driver_rdy),
   .driver_ctrl(lcd_ctrl),    // RS - RW - E
@@ -90,13 +98,14 @@ L1602A_driver #(.NFLAGS(7)) lcd_driver (
 always @(*) begin
   case (ctrl_sel_data)
     2'b10: driver_data_in   = data_in;
-    2'b01: driver_data_in   = crtl_cmd;
+    2'b01: driver_data_in   = ctrl_cmd;
     default: driver_data_in  = 8'd0;
   endcase
 end
 
 // Main control
 controller_control #(.NFLAGS(7)) control (
+  .clk(clk),
   .cmd_in(op_in),
   .flags_in({f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us}),
   .driver_rdy(driver_rdy),
@@ -110,5 +119,9 @@ controller_control #(.NFLAGS(7)) control (
   .ctrl_rdy(ctrl_rdy),
   .ctrl_cmd(ctrl_cmd)
   );
+
+always @(posedge clk) begin
+  lcd_rdy <= (ctrl_rdy & driver_rdy);
+end
 
 endmodule
