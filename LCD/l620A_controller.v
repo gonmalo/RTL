@@ -10,7 +10,7 @@
  *  gonzalof
  */
 
-module 1602A_controller #(
+module L1602A_controller #(
   parameter [1:0] NCOMMANDS = 3,
   parameter [0:0] MODE      = 1,         // 0: 8 bit - 1: 4bit
   parameter [0:0] LINES     = 1          // 0: 1 line - 1: 2 lines
@@ -18,7 +18,7 @@ module 1602A_controller #(
   input wire  [0:0]           clk,
   input wire  [7:0]           data_in,
   input wire  [NCOMMANDS:0]   op_in,
-  input wire  [0:0]           en,
+  input wire  [0:0]           enable,
   input wire  [0:0]           rst,
   output reg  [2:0]           lcd_ctrl,   // RS - RW - E
   output reg  [7-(MODE*4):0]  lcd_data,
@@ -55,7 +55,7 @@ contador #(.WIDTH(20)) delay_count(
 
 // Registered counter comparator to set flag values
 // Implement combinational version and compare results
-always @(clk) begin
+always @(posedge clk) begin
   f_40ns    <= (count_cum >= t_40ns   ) ? 1'b1 : 1'b0;
   f_250ns   <= (count_cum >= t_250ns  ) ? 1'b1 : 1'b0;
   f_42us    <= (count_cum >= t_42us   ) ? 1'b1 : 1'b0;
@@ -71,15 +71,13 @@ assign start_count = rst | ~count_enable;
 // Count enable input to counter selector
 assign count_enable = ctrl_sel_count ? nctrl_count : ndriver_count; //and with ~ready to be safe of crtl_sel_count failures
 
-// store command on a reg afteer a en posedge
-// or turn on an error flag if op changes while busy
-assign command = en & (1'b1 << op_in);
-
 // LCD Driver instance
-l1602A_driver #(.NFLAGS(7)) lcd_driver (
+L1602A_driver #(.NFLAGS(7)) lcd_driver (
+  .clk(clk),
   .data_in(ctrl_sel_data),
   .flags_in({f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us}),
-  .enable(),
+  .enable(ctrl_enable_driver),
+  .is_data(ctrl_sel_data[1]),
   .rst(rst),
   .driver_count(driver_count),
   .driver_error(),   // Not implemented yet
@@ -90,27 +88,27 @@ l1602A_driver #(.NFLAGS(7)) lcd_driver (
 
 // Combinational lcd driver data_in selector
 always @(*) begin
-  case (ctrl_sel_data) begin
+  case (ctrl_sel_data)
     2'b10: driver_data_in   = data_in;
     2'b01: driver_data_in   = crtl_cmd;
-    default driver_data_in  = 8'd0;
-  end
+    default: driver_data_in  = 8'd0;
+  endcase
 end
 
 // Main control
 controller_control #(.NFLAGS(7)) control (
-  .cmd_in(command),
+  .cmd_in(op_in),
   .flags_in({f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us}),
   .driver_rdy(driver_rdy),
-  .enable(),                        // Not implemented yet
+  .enable(enable),
   .rst(rst),
   .nctrl_count(nctrl_count),
   .ctrl_sel_count(ctrl_sel_count),
   .ctrl_sel_data(ctrl_sel_data),
+  .ctrl_enable_driver(ctrl_enable_driver),
   .ctrl_error(),                    // Not implemented yet
   .ctrl_rdy(ctrl_rdy),
   .ctrl_cmd(ctrl_cmd)
   );
 
 endmodule
-

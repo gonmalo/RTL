@@ -9,14 +9,16 @@
  *  gonzalof
  */
 
-module 1602A_driver #(
+module L1602A_driver #(
   parameter [3:0] NFLAGS  = 7,
   parameter [0:0] MODE    = 1,         // 0: 8 bit - 1: 4bit
   parameter [0:0] LINES   = 1          // 0: 1 line - 1: 2 lines
   )(
+  input wire  [0:0]           clk,
   input wire  [7:0]           data_in,
   input wire  [NFLAGS:0]      flags_in,
-  input wire  [0:0]           enable,         // Not implemented yet
+  input wire  [0:0]           enable,
+  input wire  [0:0]           is_data,
   input wire  [0:0]           rst,
   output reg  [0:0]           driver_count,
   output reg  [0:0]           driver_error,   // Not implemented yet
@@ -54,10 +56,11 @@ reg [0:0] nibble;     // Records which nibble is being processed 0: higher 1: lo
 
 always @(posedge clk) begin
   state <= (rst | ~enable) ? 1'b1000 : state;
-  case (state) begin
+  case (state)
     // Set Write mode - Wait 40ns
     INIT: begin
       driver_ctrl[RW] <= 1'b0;
+      driver_ctrl[RS] <= is_data;
       driver_rdy      <= 1'b0;
       driver_count    <= flags_in[f_40ns] ? 1'b1 : 1'b0;
       state           <= flags_in[f_40ns] ? SEND: INIT;
@@ -65,6 +68,7 @@ always @(posedge clk) begin
     // Enable bus - send first nibble - wait 230ns
     SEND: begin
       driver_ctrl[EN] <= 1'b1;
+      driver_ctrl[RS] <= is_data;
       driver_rdy      <= 1'b0;
       driver_data     <= nibble  ? data_in[3:0] : data_in[7:4];
       driver_count    <= flags_in[f_250ns] ? 1'b1 : 1'b0;
@@ -73,6 +77,7 @@ always @(posedge clk) begin
     // Disable bus wait 10ns (40ns)
     CLOSE: begin
       driver_ctrl[EN] <= 1'b0;
+      driver_ctrl[RS] <= is_data;
       driver_rdy      <= 1'b0;
       nibble          <= ~nibble;
       driver_count    <= flags_in[f_40ns] ? 1'b1 : 1'b0;
@@ -81,6 +86,7 @@ always @(posedge clk) begin
     // Unset Write mode - Wait 40us - Send next nibble or go to next INIT state
     END: begin
       driver_ctrl[RW] <= 1'b1;
+      driver_ctrl[RS] <= is_data;
       driver_rdy      <= 1'b0;
       driver_count    <= flags_in[f_250ns] ? 1'b1 : 1'b0;
       state           <= flags_in[f_250ns] ? (nibble ? INIT : 3'b1000) : END;
@@ -92,7 +98,7 @@ always @(posedge clk) begin
       driver_rdy    <= 1'b1;
       nibble        <= 1'b0;
     end
-  end
+  endcase
 end
 
 endmodule
