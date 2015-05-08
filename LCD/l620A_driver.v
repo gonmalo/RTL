@@ -55,7 +55,10 @@ reg [0:0] nibble;     // Records which nibble is being processed 0: higher 1: lo
 // or turn on an error flag if op changes while busy
 
 always @(posedge clk) begin
-  state <= (rst | ~enable) ? 1'b1000 : state;
+  //state <= (rst | ~enable) ? 1'b1000 : state;
+  if(rst | enable)
+    state <= 1'b1000;
+
   case (state)
     // Set Write mode - Wait 40ns
     INIT: begin

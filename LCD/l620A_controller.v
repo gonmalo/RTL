@@ -12,6 +12,7 @@
 
 module L1602A_controller #(
   parameter [2:0] NCOMMANDS = 5,
+  parameter [3:0] NFLAGS    = 7,
   parameter [7:0] COUNT_SIZE= 20,
   parameter [0:0] MODE      = 1,         // 0: 8 bit - 1: 4bit
   parameter [0:0] LINES     = 1          // 0: 1 line - 1: 2 lines
@@ -30,6 +31,7 @@ module L1602A_controller #(
 reg  [7:0] driver_data_in;
 
 wire [COUNT_SIZE-1:0] count_cum;
+wire [NFLAGS-1:0]     flags;
 wire [7:0]            ctrl_cmd;
 wire [1:0]            ctrl_sel_data;
 
@@ -78,12 +80,13 @@ assign start_count = rst | ~count_enable;
 
 // Count enable input to counter selector
 assign count_enable = ctrl_sel_count ? nctrl_count : ndriver_count; //and with ~ready to be safe of crtl_sel_count failures
+assign flags = {f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us};
 
 // LCD Driver instance
-L1602A_driver #(.NFLAGS(7)) lcd_driver (
+L1602A_driver #(.NFLAGS(NFLAGS)) lcd_driver (
   .clk(clk),
   .data_in(driver_data_in),
-  .flags_in({f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us}),
+  .flags_in(flags),
   .enable(ctrl_enable_driver),
   .is_data(ctrl_sel_data[1]),
   .rst(rst),
@@ -107,7 +110,7 @@ end
 controller_control #(.NFLAGS(7)) control (
   .clk(clk),
   .cmd_in(op_in),
-  .flags_in({f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us}),
+  .flags_in(flag_bus),
   .driver_rdy(driver_rdy),
   .enable(enable),
   .rst(rst),
