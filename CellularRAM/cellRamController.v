@@ -1,4 +1,3 @@
-//`include "cellRam\cellram_parameters.vh"
 
 `define tPU 150e3
 `define tCO 85
@@ -27,7 +26,7 @@ module cellRamController #(parameter clockPeriod=20,
 	input [2:0] wOP,
 	input [22:0] iAddr,
 	input [15:0] iData,
-	output oReady, 		// Power Up Done
+	output oReady, 		// Accept requests
 	// Ram Interface
    output oClock, 
    output oADV_n, 		// Address Valid Bar
@@ -42,7 +41,7 @@ module cellRamController #(parameter clockPeriod=20,
    inout [15:0] dq 		// Data In/Out
 ); 
 
-// Resources
+// Controller Resources
 reg rCE_n;
 reg rCRE;
 reg rADV_n;
@@ -50,16 +49,16 @@ reg rOE_n;
 reg rWE_n;
 reg rLB_n;
 reg rUB_n;
-// Output Buffers 
-// (Check that this map to tri-state IO buffers)
-assign dq = ( oOE_n & !oWE_n) ? data_out : 16'bzzzz_zzzz_zzzz_zzzz ;
 reg [15:0] data_in;
 reg [15:0] data_out;
 
-// Drive Control Outputs
+////////////////////////////////
+// DRIVE CONTROLLER OUTPUTS
+
+// Output Buffers (Check that this map to tri-state IO buffers)
+assign dq = ( oOE_n & !oWE_n) ? data_out : 16'bzzzz_zzzz_zzzz_zzzz ;
 //assign oClock = (state != CM_INIT) ? iClock : 1'bz;
-// Async
-assign oClock = (state != CM_INIT) ? 1'b0 : 1'bz;
+assign oClock = (state != CM_INIT) ? 1'b0 : 1'bz; // This is ASYNC ONLY. TODO: ADD SYNC MODE
 assign oReady = (state == CM_READY) ? 1 : 0;
 assign oCE_n = (state == CM_INIT) ? 1 : rCE_n;
 assign oCRE = rCRE;
@@ -69,9 +68,13 @@ assign oWE_n = rWE_n;
 assign oLB_n = rLB_n;
 assign oUB_n = rUB_n;
 
+////////////////////////////////
+// STATE BASED OUTPUT DRIVES
 always@(posedge iClock or posedge iReset) begin
 	if(iReset) begin
-		rCE_n <= #(2) 1; // 2ns hold on all 
+	// Check 5ns setup on all 
+	// Check 2ns hold on all 
+		rCE_n <= #(2) 1; 
 		rWE_n <= #(2) 1;
 		rOE_n <= #(2) 1;
 		rCRE <= #(2) 0;
@@ -82,6 +85,8 @@ always@(posedge iClock or posedge iReset) begin
 	end
 	else begin
 		case(state)
+			////////////////////////////////
+			// CONTORL REGISTER MODE
 			CM_READ_CTRL: begin
 				case(timer)
 					0:begin
@@ -92,13 +97,12 @@ always@(posedge iClock or posedge iReset) begin
 						rLB_n <= #(2) 0; 
 						rUB_n <= #(2) 0; 
 						end
-					//clockPeriod*`tAVS: begin // After tAVS, 5ns we can raise ADV
+					//(`tAVS/clockPeriod+1): begin // After tAVS, 5ns we can raise ADV
 					// ASSERT 1 cycle is enough if period is more than 5ns
 					1: begin
 						rADV_n <= #(2) 1;
 						end
-					//clockPeriod*`tAVS: begin // Addr needs to hold  2ns tAVH
-					// ASSERT 1 cycle is enough if period is more than 5ns
+					//`tAVS/clockPeriod*: begin // Addr needs to hold  2ns tAVH 
 					// tOP: Output enable to Valid Output is 20ns
 					2: begin
 						rCRE <= #(2) 0;
@@ -108,7 +112,7 @@ always@(posedge iClock or posedge iReset) begin
 						// tOP: Output enable to Valid Output is 20ns so 1 cycle
 						end
 					(`tCO/clockPeriod+1): begin
-						// 85ns from CE_n + 1 cycle for sampling
+						// 85ns from CE_n + 1 cycle 
 						//rCRE <= #(2) 1;
 						//rOE_n <= 1; 
 						end
@@ -116,6 +120,8 @@ always@(posedge iClock or posedge iReset) begin
 			end
 			CM_WRITE_CTRL: begin
 			end
+			////////////////////////////////
+			// DRIVE ASYNC MODE
 			CM_ASYNC_READ: begin
 				case(timer)
 					0:begin
@@ -128,6 +134,7 @@ always@(posedge iClock or posedge iReset) begin
 						rADV_n <= #(2) 0;
 						end 
 					(`tRC/clockPeriod+1):begin
+						// 85ns from CE_n + 1 cycle 
 						rCE_n <= #(2) 1;	
 						rWE_n <= #(2) 1;	  
 						rLB_n <= #(2) 1; 
@@ -150,6 +157,7 @@ always@(posedge iClock or posedge iReset) begin
 						rADV_n <= #(2) 0;
 						end 
 					(`tWC/clockPeriod+1):begin
+						// 85ns from CE_n + 1 cycle 
 						rCE_n <= #(2) 1;	
 						rWE_n <= #(2) 1;	  
 						rLB_n <= #(2) 1; 
@@ -157,6 +165,9 @@ always@(posedge iClock or posedge iReset) begin
 						rADV_n <= #(2) 1;
 						end
 					endcase 
+			////////////////////////////////
+			// DRIVE SYNC MODE
+			// TODO.-
 			end
 			default: begin
 				rCRE <= 0; 
@@ -167,10 +178,10 @@ always@(posedge iClock or posedge iReset) begin
 	end
 end
 
-// State Machine
+////////////////////////////////
+// STATE MACHINE PLUS TIMER
 reg [2:0] state; // State Variable
-reg [12:0] timer; 
-//wire [3:0] wOP;  
+reg [12:0] timer;  
 always@(posedge iClock or posedge iReset) begin
 	if(iReset) begin
 		// Go to init
