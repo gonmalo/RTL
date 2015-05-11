@@ -61,50 +61,50 @@ always @(posedge clk) begin
     driver_rdy    <= 1'b1;
     nibble        <= 1'b0;
   end else begin
-  case (state)
-    // Set Write mode - Wait 40ns
-    INIT: begin
-      driver_ctrl[RW] <= 1'b0;
-      driver_ctrl[RS] <= is_data;
-      driver_rdy      <= 1'b0;
-      driver_count    <= flags_in[f_40ns] ? 1'b1 : 1'b0;
-      state           <= flags_in[f_40ns] ? SEND: INIT;
-    end
-    // Enable bus - send first nibble - wait 230ns
-    SEND: begin
-      driver_ctrl[EN] <= 1'b1;
-      driver_ctrl[RS] <= is_data;
-      driver_rdy      <= 1'b0;
-      driver_data     <= nibble  ? data_in[3:0] : data_in[7:4];
-      driver_count    <= flags_in[f_250ns] ? 1'b1 : 1'b0;
-      state           <= flags_in[f_250ns] ? CLOSE : SEND;
-    end
-    // Disable bus wait 10ns (40ns)
-    CLOSE: begin
-      driver_ctrl[EN] <= 1'b0;
-      driver_ctrl[RS] <= is_data;
-      driver_rdy      <= 1'b0;
-      nibble          <= ~nibble;
-      driver_count    <= flags_in[f_40ns] ? 1'b1 : 1'b0;
-      state           <= flags_in[f_40ns] ? END : CLOSE;
-    end
-    // Unset Write mode - Wait 40us - Send next nibble or go to next INIT state
-    END: begin
-      driver_ctrl[RW] <= 1'b1;
-      driver_ctrl[RS] <= is_data;
-      driver_rdy      <= 1'b0;
-      driver_count    <= flags_in[f_250ns] ? 1'b1 : 1'b0;
-      state           <= flags_in[f_250ns] ? (nibble ? INIT : 4'b1000) : END;
-    end
-    default: begin
-      driver_ctrl   <= 3'b010;       // RS - RW - EN
-      driver_data   <= 4'b0000;
-      driver_count  <= 1'b1;
-      driver_rdy    <= 1'b1;
-      nibble        <= 1'b0;
-      //state         <= 4'b1000;
-    end
-  endcase
+    case (state)
+      // Set Write mode - Wait 40ns
+      INIT: begin
+        driver_ctrl[RW] <= 1'b0;
+        driver_ctrl[RS] <= is_data;
+        driver_rdy      <= 1'b0;
+        driver_count    <= flags_in[f_40ns] ? 1'b1 : 1'b0;
+        state           <= flags_in[f_40ns] ? SEND: INIT;
+      end
+      // Enable bus - send first nibble - wait 230ns
+      SEND: begin
+        driver_ctrl[EN] <= 1'b1;
+        driver_ctrl[RS] <= is_data;
+        driver_rdy      <= 1'b0;
+        driver_data     <= nibble  ? data_in[3:0] : data_in[7:4];
+        driver_count    <= flags_in[f_250ns] ? 1'b1 : 1'b0;
+        state           <= flags_in[f_250ns] ? CLOSE : SEND;
+      end
+      // Disable bus wait 10ns (40ns)
+      CLOSE: begin
+        driver_ctrl[EN] <= 1'b0;
+        driver_ctrl[RS] <= is_data;
+        driver_rdy      <= 1'b0;
+        nibble          <= ~nibble;
+        driver_count    <= flags_in[f_40ns] ? 1'b1 : 1'b0;
+        state           <= flags_in[f_40ns] ? END : CLOSE;
+      end
+      // Unset Write mode - Wait 40us - Send next nibble or go to next INIT state
+      END: begin
+        driver_ctrl[RW] <= 1'b1;
+        driver_ctrl[RS] <= is_data;
+        driver_rdy      <= 1'b0;
+        driver_count    <= flags_in[f_250ns] ? 1'b1 : 1'b0;
+        state           <= flags_in[f_250ns] ? (nibble ? INIT : 4'b1000) : END;
+      end
+      default: begin
+        driver_ctrl   <= 3'b010;       // RS - RW - EN
+        driver_data   <= 4'b0000;
+        driver_count  <= 1'b1;
+        driver_rdy    <= 1'b1;
+        nibble        <= 1'b0;
+        //state         <= 4'b1000;
+      end
+    endcase
   end
 end
 

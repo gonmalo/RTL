@@ -55,8 +55,8 @@ parameter [5:0] INIT      = 6'b00_0001,
                 CONFIG    = 6'b00_0010,
                 SEND_DATA = 6'b00_0100,
                 CLEAR     = 6'b00_1000,
-                OFF       = 6'b10_0000,
-                IDLE      = 6'b00_0000;
+                OFF       = 6'b01_0000,
+                IDLE      = 6'b10_0000;
 
 /// FLAGS: counter checkpoints used to have proper delays between commands
 parameter [3:0] f_40ns    =6,
@@ -91,7 +91,11 @@ parameter [2:0] SEND_DO   = 1'b001,
 
 // store command on a reg afteer a en posedge
 // or turn on an error flag if op changes while busy
-assign command = (enable << cmd_in);
+assign command = (enable << cmd_in-1);
+
+// Catch if enable was lowered while the command execution was not done yet
+// Flag it as an Error condition
+// PENDING
 
 //always @(posedge enable or posedge driver_rdy) begin
 always @(posedge clk) begin
@@ -104,148 +108,148 @@ always @(posedge clk) begin
     ctrl_cmd            <= 8'b0000_0000;
     nctrl_count         <= 1'b1;
   end else begin
-  case (command)
-    // 1: INIT: will initiate the LCD and will set the default
-    //    configuration (4bit - 2lines - AutoI/D)
-    INIT: begin
-      case (ctrl_state)
-        // Needed only after FPGA programming, not implemented for now
-        INIT_ON: begin
-          ctrl_sel_count      <= CONTROL_COUNT;
-          ctrl_sel_data       <= UNUSED_DATA;
-          ctrl_enable_driver  <= 1'b0;
-          ctrl_rdy            <= 1'b0;
-          nctrl_count         <= flags_in[f_15000us] ? 1'b1 : 1'b0;
-          ctrl_state          <= flags_in[f_15000us] ? INIT_SET : INIT_ON;
-        end
+    case (command)
+      // 1: INIT: will initiate the LCD and will set the default
+      //    configuration (4bit - 2lines - AutoI/D)
+      INIT: begin
+        case (ctrl_state)
+          // Needed only after FPGA programming, not implemented for now
+          INIT_ON: begin
+            ctrl_sel_count      <= CONTROL_COUNT;
+            ctrl_sel_data       <= UNUSED_DATA;
+            ctrl_enable_driver  <= 1'b0;
+            ctrl_rdy            <= 1'b0;
+            nctrl_count         <= flags_in[f_15000us] ? 1'b1 : 1'b0;
+            ctrl_state          <= flags_in[f_15000us] ? INIT_SET : INIT_ON;
+          end
 
-        INIT_SET: begin
-          ctrl_sel_count      <= DRIVER_COUNT;
-          ctrl_sel_data       <= INTERNAL_CMD;
-          ctrl_enable_driver  <= 1'b1;
-          ctrl_rdy            <= 1'b0;
-          ctrl_cmd            <= SETUP;
-          ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_MODE : INIT_SET;
-        end
+          INIT_SET: begin
+            ctrl_sel_count      <= DRIVER_COUNT;
+            ctrl_sel_data       <= INTERNAL_CMD;
+            ctrl_enable_driver  <= 1'b1;
+            ctrl_rdy            <= 1'b0;
+            ctrl_cmd            <= SETUP;
+            ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_MODE : INIT_SET;
+          end
 
-        INIT_MODE: begin
-          ctrl_sel_count      <= DRIVER_COUNT;
-          ctrl_sel_data       <= INTERNAL_CMD;
-          ctrl_enable_driver  <= 1'b1;
-          ctrl_rdy            <= 1'b0;
-          ctrl_cmd            <= ENTRY_MODE;
-          ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_DISP : INIT_MODE;
-        end
+          INIT_MODE: begin
+            ctrl_sel_count      <= DRIVER_COUNT;
+            ctrl_sel_data       <= INTERNAL_CMD;
+            ctrl_enable_driver  <= 1'b1;
+            ctrl_rdy            <= 1'b0;
+            ctrl_cmd            <= ENTRY_MODE;
+            ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_DISP : INIT_MODE;
+          end
 
-        INIT_DISP: begin
-          ctrl_sel_count      <= DRIVER_COUNT;
-          ctrl_sel_data       <= INTERNAL_CMD;
-          ctrl_enable_driver  <= 1'b1;
-          ctrl_rdy            <= 1'b0;
-          ctrl_cmd            <= DISP_ON;
-          ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_CLR : INIT_DISP;
-        end
+          INIT_DISP: begin
+            ctrl_sel_count      <= DRIVER_COUNT;
+            ctrl_sel_data       <= INTERNAL_CMD;
+            ctrl_enable_driver  <= 1'b1;
+            ctrl_rdy            <= 1'b0;
+            ctrl_cmd            <= DISP_ON;
+            ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_CLR : INIT_DISP;
+          end
 
-        // These two states are equivalent to CLEAR. The state machine could jump there instead
-        // Or just change the usage model and not include an initial clear on the INIT sequence
-        INIT_CLR: begin
-          ctrl_sel_count      <= DRIVER_COUNT;
-          ctrl_sel_data       <= INTERNAL_CMD;
-          ctrl_enable_driver  <= 1'b1;
-          ctrl_rdy            <= 1'b0;
-          ctrl_cmd            <= CLEAR_CMD;
-          ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_RDY : INIT_CLR;
-        end
+          // These two states are equivalent to CLEAR. The state machine could jump there instead
+          // Or just change the usage model and not include an initial clear on the INIT sequence
+          INIT_CLR: begin
+            ctrl_sel_count      <= DRIVER_COUNT;
+            ctrl_sel_data       <= INTERNAL_CMD;
+            ctrl_enable_driver  <= 1'b1;
+            ctrl_rdy            <= 1'b0;
+            ctrl_cmd            <= CLEAR_CMD;
+            ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_RDY : INIT_CLR;
+          end
 
-        INIT_RDY: begin
-          ctrl_sel_count      <= CONTROL_COUNT;
-          ctrl_sel_data       <= UNUSED_DATA;
-          ctrl_enable_driver  <= 1'b0;
-          ctrl_rdy            <= 1'b0;
-          nctrl_count         <= flags_in[f_1640us] ? 1'b1 : 1'b0;
-          ctrl_state          <= flags_in[f_1640us] ? INIT_NOP : INIT_RDY;
-        end
+          INIT_RDY: begin
+            ctrl_sel_count      <= CONTROL_COUNT;
+            ctrl_sel_data       <= UNUSED_DATA;
+            ctrl_enable_driver  <= 1'b0;
+            ctrl_rdy            <= 1'b0;
+            nctrl_count         <= flags_in[f_1640us] ? 1'b1 : 1'b0;
+            ctrl_state          <= flags_in[f_1640us] ? INIT_NOP : INIT_RDY;
+          end
 
-        default: begin
-          ctrl_state          <= 1;
-          ctrl_sel_count      <= CONTROL_COUNT;
-          ctrl_sel_data       <= UNUSED_DATA;
-          ctrl_enable_driver  <= 1'b0;
-          ctrl_rdy            <= 1'b1;
-          nctrl_count         <= 1'b1;
-        end
-      endcase
-    end
-    // 2: CONFIG: to be implemented soon
-    CONFIG: begin
-    end
-    // 4: SEND_DATA: will send data to LCD
-    SEND_DATA: begin
-      case (ctrl_state)
-        SEND_DO: begin
-          ctrl_sel_count      <= DRIVER_COUNT;
-          ctrl_sel_data       <= EXTERNAL_DATA;
-          ctrl_enable_driver  <= 1'b1;
-          ctrl_rdy            <= 1'b0;
-          ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? SEND_NOP : SEND_DO;
-        end
+          default: begin
+            ctrl_state          <= 1;
+            ctrl_sel_count      <= CONTROL_COUNT;
+            ctrl_sel_data       <= UNUSED_DATA;
+            ctrl_enable_driver  <= 1'b0;
+            ctrl_rdy            <= 1'b1;
+            nctrl_count         <= 1'b1;
+          end
+        endcase
+      end
+      // 2: CONFIG: to be implemented soon
+      CONFIG: begin
+      end
+      // 4: SEND_DATA: will send data to LCD
+      SEND_DATA: begin
+        case (ctrl_state)
+          SEND_DO: begin
+            ctrl_sel_count      <= DRIVER_COUNT;
+            ctrl_sel_data       <= EXTERNAL_DATA;
+            ctrl_enable_driver  <= 1'b1;
+            ctrl_rdy            <= 1'b0;
+            ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? SEND_NOP : SEND_DO;
+          end
 
-        default: begin
-          ctrl_sel_count      <= CONTROL_COUNT;
-          ctrl_sel_data       <= UNUSED_DATA;
-          ctrl_enable_driver  <= 1'b0;
-          ctrl_rdy            <= 1'b1;
-          nctrl_count         <= 1'b1;
-        end
-      endcase
-    end
-    // 8: CLEAR: will clean the display and set the DDRAM address to 0
-    CLEAR: begin
-      case (ctrl_state)
-        CLEAR_DO: begin
-          ctrl_sel_count      <= DRIVER_COUNT;
-          ctrl_sel_data       <= INTERNAL_CMD;
-          ctrl_enable_driver  <= 1'b1;
-          ctrl_rdy            <= 1'b0;
-          ctrl_cmd            <= CLEAR_CMD;
-          ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? CLEAR_WAIT : CLEAR_DO;
-        end
-
-        CLEAR_WAIT: begin
-          ctrl_sel_count      <= CONTROL_COUNT;
-          ctrl_sel_data       <= UNUSED_DATA;
-          ctrl_enable_driver  <= 1'b0;
-          ctrl_rdy            <= 1'b0;
-          nctrl_count         <= flags_in[f_1640us] ? 1'b1 : 1'b0;
-          ctrl_state          <= flags_in[f_1640us] ? CLEAR_NOP : CLEAR_WAIT;
-        end
-        CLEAR_MEM_RST: begin
-          ;
-        end
-        default: begin
-          ctrl_state          <= 1;
-          ctrl_sel_count      <= CONTROL_COUNT;
-          ctrl_sel_data       <= UNUSED_DATA;
-          ctrl_enable_driver  <= 1'b0;
-          ctrl_rdy            <= 1'b1;
-          nctrl_count         <= 1'b1;
-        end
-      endcase
-    end
-    // 32: OFF: will turn of the LCD display
-    //     To be implemented
-    OFF: begin
-    end
-    // 0: IDLE : default status doing nothing, it must enable the ready bit
-    default: begin
-      ctrl_state          <= 1;
-      ctrl_sel_count      <= CONTROL_COUNT;
-      ctrl_sel_data       <= UNUSED_DATA;
-      ctrl_enable_driver  <= 1'b0;
-      ctrl_rdy            <= 1'b1;
-      nctrl_count         <= 1'b1;
-    end
-  endcase
+          default: begin
+            ctrl_sel_count      <= CONTROL_COUNT;
+            ctrl_sel_data       <= UNUSED_DATA;
+            ctrl_enable_driver  <= 1'b0;
+            ctrl_rdy            <= 1'b1;
+            nctrl_count         <= 1'b1;
+          end
+        endcase
+      end
+      // 8: CLEAR: will clean the display and set the DDRAM address to 0
+      CLEAR: begin
+        case (ctrl_state)
+          CLEAR_DO: begin
+            ctrl_sel_count      <= DRIVER_COUNT;
+            ctrl_sel_data       <= INTERNAL_CMD;
+            ctrl_enable_driver  <= 1'b1;
+            ctrl_rdy            <= 1'b0;
+            ctrl_cmd            <= CLEAR_CMD;
+            ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? CLEAR_WAIT : CLEAR_DO;
+          end
+  
+          CLEAR_WAIT: begin
+            ctrl_sel_count      <= CONTROL_COUNT;
+            ctrl_sel_data       <= UNUSED_DATA;
+            ctrl_enable_driver  <= 1'b0;
+            ctrl_rdy            <= 1'b0;
+            nctrl_count         <= flags_in[f_1640us] ? 1'b1 : 1'b0;
+            ctrl_state          <= flags_in[f_1640us] ? CLEAR_NOP : CLEAR_WAIT;
+          end
+          CLEAR_MEM_RST: begin
+            ;
+          end
+          default: begin
+            ctrl_state          <= 1;
+            ctrl_sel_count      <= CONTROL_COUNT;
+            ctrl_sel_data       <= UNUSED_DATA;
+            ctrl_enable_driver  <= 1'b0;
+            ctrl_rdy            <= 1'b1;
+            nctrl_count         <= 1'b1;
+          end
+        endcase
+      end
+      // 32: OFF: will turn of the LCD display
+      //     To be implemented
+      OFF: begin
+      end
+      // 0: IDLE : default status doing nothing, it must enable the ready bit
+      default: begin
+        ctrl_state          <= 1;
+        ctrl_sel_count      <= CONTROL_COUNT;
+        ctrl_sel_data       <= UNUSED_DATA;
+        ctrl_enable_driver  <= 1'b0;
+        ctrl_rdy            <= 1'b1;
+        nctrl_count         <= 1'b1;
+      end
+    endcase
   end
 end
 

@@ -24,7 +24,7 @@ module L1602A_controller #(
   input wire  [0:0]           rst,
   output wire [2:0]           lcd_ctrl,   // RS - RW - E
   output wire [7-(MODE*4):0]  lcd_data,
-  output wire  [0:0]           lcd_rdy
+  output wire [0:0]           lcd_rdy
   );
 
 // Interconnection wires
@@ -128,4 +128,5 @@ controller_control #(.NFLAGS(NFLAGS)) control (
 end
 */
 assign lcd_rdy = (ctrl_rdy & driver_rdy);
+
 endmodule
