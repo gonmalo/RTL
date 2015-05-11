@@ -13,7 +13,7 @@ module controller_control #(
   )(
   input wire  [0:0]           clk,
   input wire  [5:0]           cmd_in,
-  input wire  [NFLAGS:0]      flags_in,
+  input wire  [NFLAGS-1:0]    flags_in,
   input wire  [0:0]           driver_rdy,         // Not implemented yet
   input wire  [0:0]           enable,         // Not implemented yet
   input wire  [0:0]           rst,
@@ -91,10 +91,19 @@ parameter [2:0] SEND_DO   = 1'b001,
 
 // store command on a reg afteer a en posedge
 // or turn on an error flag if op changes while busy
-assign command = (1'b1 << cmd_in);
+assign command = (enable << cmd_in);
 
 //always @(posedge enable or posedge driver_rdy) begin
 always @(posedge clk) begin
+  if (rst | ~enable) begin
+    ctrl_state          <= 1;
+    ctrl_sel_count      <= CONTROL_COUNT;
+    ctrl_sel_data       <= UNUSED_DATA;
+    ctrl_enable_driver  <= 1'b0;
+    ctrl_rdy            <= 1'b1;
+    ctrl_cmd            <= 8'b0000_0000;
+    nctrl_count         <= 1'b1;
+  end else begin
   case (command)
     // 1: INIT: will initiate the LCD and will set the default
     //    configuration (4bit - 2lines - AutoI/D)
@@ -158,6 +167,7 @@ always @(posedge clk) begin
         end
 
         default: begin
+          ctrl_state          <= 1;
           ctrl_sel_count      <= CONTROL_COUNT;
           ctrl_sel_data       <= UNUSED_DATA;
           ctrl_enable_driver  <= 1'b0;
@@ -213,6 +223,7 @@ always @(posedge clk) begin
           ;
         end
         default: begin
+          ctrl_state          <= 1;
           ctrl_sel_count      <= CONTROL_COUNT;
           ctrl_sel_data       <= UNUSED_DATA;
           ctrl_enable_driver  <= 1'b0;
@@ -227,8 +238,15 @@ always @(posedge clk) begin
     end
     // 0: IDLE : default status doing nothing, it must enable the ready bit
     default: begin
+      ctrl_state          <= 1;
+      ctrl_sel_count      <= CONTROL_COUNT;
+      ctrl_sel_data       <= UNUSED_DATA;
+      ctrl_enable_driver  <= 1'b0;
+      ctrl_rdy            <= 1'b1;
+      nctrl_count         <= 1'b1;
     end
   endcase
+  end
 end
 
 endmodule

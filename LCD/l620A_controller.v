@@ -24,14 +24,14 @@ module L1602A_controller #(
   input wire  [0:0]           rst,
   output wire [2:0]           lcd_ctrl,   // RS - RW - E
   output wire [7-(MODE*4):0]  lcd_data,
-  output reg  [0:0]           lcd_rdy
+  output wire  [0:0]           lcd_rdy
   );
 
 // Interconnection wires
 reg  [7:0] driver_data_in;
 
 wire [COUNT_SIZE-1:0] count_cum;
-wire [NFLAGS-1:0]     flags;
+wire [NFLAGS-1:0]     flag_bus;
 wire [7:0]            ctrl_cmd;
 wire [1:0]            ctrl_sel_data;
 
@@ -76,17 +76,17 @@ always @(posedge clk) begin
 end
 
 // RST input to counter (RST also works as counter enable signal)
-assign start_count = rst | ~count_enable;
+assign start_count = rst | count_enable;
 
 // Count enable input to counter selector
 assign count_enable = ctrl_sel_count ? nctrl_count : ndriver_count; //and with ~ready to be safe of crtl_sel_count failures
-assign flags = {f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us};
+assign flag_bus = {f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us};
 
 // LCD Driver instance
 L1602A_driver #(.NFLAGS(NFLAGS)) lcd_driver (
   .clk(clk),
   .data_in(driver_data_in),
-  .flags_in(flags),
+  .flags_in(flag_bus),
   .enable(ctrl_enable_driver),
   .is_data(ctrl_sel_data[1]),
   .rst(rst),
@@ -107,7 +107,7 @@ always @(*) begin
 end
 
 // Main control
-controller_control #(.NFLAGS(7)) control (
+controller_control #(.NFLAGS(NFLAGS)) control (
   .clk(clk),
   .cmd_in(op_in),
   .flags_in(flag_bus),
@@ -123,8 +123,9 @@ controller_control #(.NFLAGS(7)) control (
   .ctrl_cmd(ctrl_cmd)
   );
 
-always @(posedge clk) begin
+/*always @(posedge clk) begin
   lcd_rdy <= (ctrl_rdy & driver_rdy);
 end
-
+*/
+assign lcd_rdy = (ctrl_rdy & driver_rdy);
 endmodule

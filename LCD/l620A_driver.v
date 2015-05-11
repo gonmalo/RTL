@@ -16,7 +16,7 @@ module L1602A_driver #(
   )(
   input wire  [0:0]           clk,
   input wire  [7:0]           data_in,
-  input wire  [NFLAGS:0]      flags_in,
+  input wire  [NFLAGS-1:0]    flags_in,
   input wire  [0:0]           enable,
   input wire  [0:0]           is_data,
   input wire  [0:0]           rst,
@@ -55,10 +55,12 @@ reg [0:0] nibble;     // Records which nibble is being processed 0: higher 1: lo
 // or turn on an error flag if op changes while busy
 
 always @(posedge clk) begin
-  //state <= (rst | ~enable) ? 1'b1000 : state;
-  if(rst | enable)
-    state <= 1'b1000;
-
+  state <= rst ? 4'b1000 : state;
+  if(~enable) begin
+    state <= INIT;
+    driver_rdy    <= 1'b1;
+    nibble        <= 1'b0;
+  end else begin
   case (state)
     // Set Write mode - Wait 40ns
     INIT: begin
@@ -92,7 +94,7 @@ always @(posedge clk) begin
       driver_ctrl[RS] <= is_data;
       driver_rdy      <= 1'b0;
       driver_count    <= flags_in[f_250ns] ? 1'b1 : 1'b0;
-      state           <= flags_in[f_250ns] ? (nibble ? INIT : 3'b1000) : END;
+      state           <= flags_in[f_250ns] ? (nibble ? INIT : 4'b1000) : END;
     end
     default: begin
       driver_ctrl   <= 3'b010;       // RS - RW - EN
@@ -100,9 +102,10 @@ always @(posedge clk) begin
       driver_count  <= 1'b1;
       driver_rdy    <= 1'b1;
       nibble        <= 1'b0;
-      state         <= 4'b0000;
+      //state         <= 4'b1000;
     end
   endcase
+  end
 end
 
 endmodule
