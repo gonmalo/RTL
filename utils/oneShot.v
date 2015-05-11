@@ -4,9 +4,9 @@
  */
 
 module oneShot(
-  input wire [0:0] sigIn,
-  input wire [0:0] clk,
-  output reg [0:0] sigOut
+  input wire  [0:0] sigIn,
+  input wire  [0:0] clk,
+  output wire [0:0] sigOut
   );
 
   reg [1:0] shift;
