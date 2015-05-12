@@ -10,7 +10,7 @@ module oneShot(
   );
 
   reg [1:0] shift;
-  sigout <= (shift == 2'b01) ? 1 : 0;
+  sigOut <= (shift == 2'b01) ? 1 : 0;
 
   always @(posedge clk) begin
     shift <= {shift[0], sigIn};

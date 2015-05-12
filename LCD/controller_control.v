@@ -126,7 +126,7 @@ always @(posedge clk) begin
           INIT_SET: begin
             ctrl_sel_count      <= DRIVER_COUNT;
             ctrl_sel_data       <= INTERNAL_CMD;
-            ctrl_enable_driver  <= 1'b1;
+            ctrl_enable_driver  <= (ctrl_cmd == SETUP) ? 1'b1 : 1'b0;
             ctrl_rdy            <= 1'b0;
             ctrl_cmd            <= SETUP;
             ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_MODE : INIT_SET;
@@ -135,7 +135,7 @@ always @(posedge clk) begin
           INIT_MODE: begin
             ctrl_sel_count      <= DRIVER_COUNT;
             ctrl_sel_data       <= INTERNAL_CMD;
-            ctrl_enable_driver  <= 1'b1;
+            ctrl_enable_driver  <= (ctrl_cmd == ENTRY_MODE) ? 1'b1 : 1'b0;
             ctrl_rdy            <= 1'b0;
             ctrl_cmd            <= ENTRY_MODE;
             ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_DISP : INIT_MODE;
@@ -144,7 +144,7 @@ always @(posedge clk) begin
           INIT_DISP: begin
             ctrl_sel_count      <= DRIVER_COUNT;
             ctrl_sel_data       <= INTERNAL_CMD;
-            ctrl_enable_driver  <= 1'b1;
+            ctrl_enable_driver  <= (ctrl_cmd == DISP_ON) ? 1'b1 : 1'b0;
             ctrl_rdy            <= 1'b0;
             ctrl_cmd            <= DISP_ON;
             ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_CLR : INIT_DISP;
@@ -155,7 +155,7 @@ always @(posedge clk) begin
           INIT_CLR: begin
             ctrl_sel_count      <= DRIVER_COUNT;
             ctrl_sel_data       <= INTERNAL_CMD;
-            ctrl_enable_driver  <= 1'b1;
+            ctrl_enable_driver  <= (ctrl_cmd == CLEAR_CMD) ? 1'b1 : 1'b0;
             ctrl_rdy            <= 1'b0;
             ctrl_cmd            <= CLEAR_CMD;
             ctrl_state          <= (driver_rdy & ctrl_enable_driver) ? INIT_RDY : INIT_CLR;
