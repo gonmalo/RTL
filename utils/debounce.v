@@ -11,7 +11,7 @@ module debounce #(
   input wire  [0:0] clk,
   output wire [0:0] d_btn
  );
- 
+
 // Add assert for ETAPAS>0
 reg [ETAPAS-1:0] shift;
 // Output

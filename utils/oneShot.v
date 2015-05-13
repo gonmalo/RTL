@@ -9,10 +9,11 @@ module oneShot(
   output wire [0:0] sigOut
   );
 
-  reg [1:0] shift;
-  sigOut <= (shift == 2'b01) ? 1 : 0;
+reg [1:0] shift;
+assign sigOut = (shift == 2'b01) ? 1 : 0;
 
-  always @(posedge clk) begin
-    shift <= {shift[0], sigIn};
+always @(posedge clk) begin
+  shift <= {shift[0], sigIn};
+end
 
 endmodule

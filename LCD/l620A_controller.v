@@ -34,6 +34,7 @@ wire [COUNT_SIZE-1:0] count_cum;
 wire [NFLAGS-1:0]     flag_bus;
 wire [7:0]            ctrl_cmd;
 wire [1:0]            ctrl_sel_data;
+wire [0:0]            count_enable, ctrl_sel_count, nctrl_count, ndriver_count;
 
 /// Delays requiered by the LCD
 parameter [19:0] t_40ns   = 1;        //40ns    == ~1clk
