@@ -15,11 +15,11 @@ module slower_clk #(
 reg [POT:0] amortiguador;
 
 // Agregar un assert! POT > 0
-// se divide el clock por una potencia de 2^POT
+// se divide el clock por 2^POT
 always@(posedge clk) begin
   if(rst) begin
     clk_slow <= 1'b0;
-	 amortiguador <= {POT+1 {1'b0}};
+    amortiguador <= {POT+1 {1'b0}};
   end else begin
   amortiguador <= amortiguador + 1'b1;
     if(amortiguador[POT] == 1'b1) begin

@@ -61,6 +61,7 @@ contador #(.WIDTH(COUNT_SIZE)) delay_count(
   .rst(start_count),
   .empty(),
   .full(),
+  .enable(1'b1),
   .cuenta(count_cum)
   );
 
@@ -124,10 +125,12 @@ controller_control #(.NFLAGS(NFLAGS)) control (
   .ctrl_cmd(ctrl_cmd)
   );
 
-/*always @(posedge clk) begin
-  lcd_rdy <= (ctrl_rdy & driver_rdy);
-end
-*/
+/*
+reg lcd_tmp;
+always @(posedge clk) begin
+  lcd_tmp <= (ctrl_rdy & driver_rdy);
+end */
+
 assign lcd_rdy = (ctrl_rdy & driver_rdy);
 
 endmodule

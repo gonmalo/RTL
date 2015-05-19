@@ -20,7 +20,7 @@ assign empty = ~|cuenta;
 assign full = &cuenta;
 
 // contador con rst asinc
-always @(posedge nxt, posedge rst) begin
+always @(posedge nxt) begin
   // Caso de reset se llevan las salidas a 0
   if(rst)
     cuenta <= {WIDTH {1'b0}} ;

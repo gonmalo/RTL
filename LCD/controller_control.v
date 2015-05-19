@@ -224,7 +224,6 @@ always @(posedge clk) begin
             ctrl_state          <= flags_in[f_1640us] ? CLEAR_NOP : CLEAR_WAIT;
           end
           CLEAR_MEM_RST: begin
-            ;
           end
           default: begin
             ctrl_state          <= 1;

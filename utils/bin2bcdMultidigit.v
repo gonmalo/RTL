@@ -26,6 +26,7 @@ reg shift;
 // asigna el primer carry
 assign carry[0] = shiftReg[nBits-1];
 
+/*
 // instancia el módulo que convierte cada cifra usando arrray
 bin2bcdDigit dig[nDigits-1:0] (
   .Q(bcdTmp[4*nDigits-1:0]),
@@ -34,9 +35,8 @@ bin2bcdDigit dig[nDigits-1:0] (
   .INIT_BAR(shift),
   .CLK(clk)
 );
-
+*/
 // instancia el módulo que convierte cada cifra usando generate 
-/*
 genvar i;
 generate
 for( i=1; i<= nDigits; i=i+1) begin: bin2bcdar
@@ -49,7 +49,7 @@ for( i=1; i<= nDigits; i=i+1) begin: bin2bcdar
   );
 end
 endgenerate
-*/
+
 /*
 bin2bcdDigit dig0(.Q(bcdTmp[3:0]), .MODOUT(carry[1]), .MODIN(carry[0]), .INIT_BAR(shift), .CLK(clk));
 bin2bcdDigit dig1(.Q(bcdTmp[7:4]), .MODOUT(carry[2]), .MODIN(carry[1]), .INIT_BAR(shift), .CLK(clk));
@@ -67,7 +67,7 @@ always @(posedge clk) begin
     end else begin
       shift <= 0;
       state <= 0;
-      ready <= 0;
+      ready <= 1;
     end
   end else if (state < nBits+1)  begin
     shiftReg <= shiftReg << 1;
