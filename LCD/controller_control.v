@@ -46,9 +46,9 @@ parameter [0:0] CONTROL_COUNT = 1'b0,
                 DRIVER_COUNT  = 1'b1;
 
 // DATA IN mux control select
-parameter [1:0] EXTERNAL_DATA = 2'b10,
-                INTERNAL_CMD  = 2'b01,
-                UNUSED_DATA   = 2'b00;
+parameter [2:0] EXTERNAL_DATA = 3'b010,
+                INTERNAL_CMD  = 3'b001,
+                UNUSED_DATA   = 3'b100;
 
 /// DRIVER Commands
 parameter [5:0] INIT      = 6'b00_0001,
@@ -71,19 +71,19 @@ parameter [3:0] f_40ns    =6,
 reg [5:0] ctrl_state;
 
 /// INIT STATES
-parameter [5:0] INIT_ON   = 6'b00_0001,
-                INIT_SET  = 6'b00_0010,
-                INIT_MODE = 6'b00_0100,
-                INIT_DISP = 6'b00_1000,
-                INIT_CLR  = 6'b01_0000,
-                INIT_RDY  = 6'b10_0000,
-                INIT_NOP  = 6'b00_0000;
+parameter [6:0] INIT_ON   = 7'b000_0001,
+                INIT_SET  = 7'b000_0010,
+                INIT_MODE = 7'b000_0100,
+                INIT_DISP = 7'b000_1000,
+                INIT_CLR  = 7'b001_0000,
+                INIT_RDY  = 7'b010_0000,
+                INIT_NOP  = 7'b100_0000;
 
 /// CLEAR STATES
-parameter [2:0] CLEAR_DO      = 3'b001,
-                CLEAR_WAIT    = 3'b010,
-                CLEAR_MEM_RST = 3'b100,  //unused - not needed
-                CLEAR_NOP     = 3'b000;
+parameter [3:0] CLEAR_DO      = 4'b0001,
+                CLEAR_WAIT    = 4'b0010,
+                CLEAR_MEM_RST = 4'b0100,  //unused - not needed
+                CLEAR_NOP     = 4'b1000;
 
 // SEND DATA STATES
 parameter [2:0] SEND_DO   = 1'b001,

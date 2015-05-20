@@ -24,7 +24,8 @@ module L1602A_controller #(
   input wire  [0:0]           rst,
   output wire [2:0]           lcd_ctrl,   // RS - RW - E
   output wire [7-(MODE*4):0]  lcd_data,
-  output wire [0:0]           lcd_rdy
+  output wire [0:0]           lcd_rdy,
+  output wire [7:0]           dbg
   );
 
 // Interconnection wires
@@ -34,9 +35,18 @@ wire [COUNT_SIZE-1:0] count_cum;
 wire [NFLAGS-1:0]     flag_bus;
 wire [7:0]            ctrl_cmd;
 wire [1:0]            ctrl_sel_data;
-wire [0:0]            count_enable, ctrl_sel_count, nctrl_count, ndriver_count;
+wire [0:0]            count_enable, ctrl_sel_count, nctrl_count, ndriver_count, nstart_count;
 
 /// Delays requiered by the LCD
+`ifdef XILINX_ISIM
+parameter [19:0] t_40ns   = 1;     //40ns    == ~1clk
+parameter [19:0] t_250ns  = 6;     //250ns   == ~6clks
+parameter [19:0] t_42us   = 10;    //42us    == ~1008clks
+parameter [19:0] t_100us  = 24;    //100us   == ~2400clks
+parameter [19:0] t_1640us   = 39;  //1.64ms  == ~39360clks
+parameter [19:0] t_4100us   = 98;  //4.1ms   == ~98400clks
+parameter [19:0] t_15000us  = 360; //15ms    == ~360000clks
+`else
 parameter [19:0] t_40ns   = 1;        //40ns    == ~1clk
 parameter [19:0] t_250ns  = 6;        //250ns   == ~6clks
 parameter [19:0] t_42us   = 1008;     //42us    == ~1008clks
@@ -44,7 +54,7 @@ parameter [19:0] t_100us  = 2400;     //100us   == ~2400clks
 parameter [19:0] t_1640us   = 39360;  //1.64ms  == ~39360clks
 parameter [19:0] t_4100us   = 98400;  //4.1ms   == ~98400clks
 parameter [19:0] t_15000us  = 360000; //15ms    == ~360000clks
-
+`endif
 /// Counter section to have proper delays between commands
 reg [0:0] f_40ns    =0,
           f_250ns   =0,
@@ -58,30 +68,30 @@ reg [0:0] f_40ns    =0,
 contador #(.WIDTH(COUNT_SIZE)) delay_count(
   .nxt(clk),
   .dir(1'b1),
-  .rst(start_count),
+  .rst(nstart_count),
   .empty(),
   .full(),
   .enable(1'b1),
   .cuenta(count_cum)
   );
 
-// Registered counter comparator to set flag values
+// Registered counter comparator to set flag values ... unregistered now
 // Implement combinational version and compare results
-always @(posedge clk) begin
-  f_40ns    <= (count_cum >= t_40ns   ) ? 1'b1 : 1'b0;
-  f_250ns   <= (count_cum >= t_250ns  ) ? 1'b1 : 1'b0;
-  f_42us    <= (count_cum >= t_42us   ) ? 1'b1 : 1'b0;
-  f_100us   <= (count_cum >= t_100us  ) ? 1'b1 : 1'b0;
-  f_1640us  <= (count_cum >= t_1640us ) ? 1'b1 : 1'b0;
-  f_4100us  <= (count_cum >= t_4100us ) ? 1'b1 : 1'b0;
-  f_15000us <= (count_cum >= t_15000us) ? 1'b1 : 1'b0;
+always @(*) begin
+  f_40ns    = (count_cum >= t_40ns   ) ? 1'b1 : 1'b0;
+  f_250ns   = (count_cum >= t_250ns  ) ? 1'b1 : 1'b0;
+  f_42us    = (count_cum >= t_42us   ) ? 1'b1 : 1'b0;
+  f_100us   = (count_cum >= t_100us  ) ? 1'b1 : 1'b0;
+  f_1640us  = (count_cum >= t_1640us ) ? 1'b1 : 1'b0;
+  f_4100us  = (count_cum >= t_4100us ) ? 1'b1 : 1'b0;
+  f_15000us = (count_cum >= t_15000us) ? 1'b1 : 1'b0;
 end
 
 // RST input to counter (RST also works as counter enable signal)
-assign start_count = rst | count_enable;
+assign nstart_count = rst | count_enable;
 
 // Count enable input to counter selector
-assign count_enable = ctrl_sel_count ? nctrl_count : ndriver_count; //and with ~ready to be safe of crtl_sel_count failures
+assign count_enable = ctrl_sel_count ? ndriver_count : nctrl_count ; //and with ~ready to be safe of crtl_sel_count failures
 assign flag_bus = {f_40ns, f_250ns, f_42us, f_100us, f_1640us, f_4100us, f_15000us};
 
 // LCD Driver instance
@@ -132,5 +142,7 @@ always @(posedge clk) begin
 end */
 
 assign lcd_rdy = (ctrl_rdy & driver_rdy);
+
+assign dbg[1:0] = {ctrl_rdy, driver_rdy};
 
 endmodule
